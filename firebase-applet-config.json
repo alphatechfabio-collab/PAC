@@ -1,0 +1,10 @@
+{
+  "projectId": "pac-atleta",
+  "appId": "1:435735866914:web:c394332cca347105c0e47b",
+  "apiKey": "AIzaSyCY0_rSee1rRidD7Ua07ZtCRBtKjA0qFww",
+  "authDomain": "pac-atleta.firebaseapp.com",
+  "firestoreDatabaseId": "default",
+  "storageBucket": "pac-atleta.firebasestorage.app",
+  "messagingSenderId": "435735866914",
+  "measurementId": "G-23G47NL9D2"
+}

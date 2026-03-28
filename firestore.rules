@@ -1,0 +1,350 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, role, name, academy_id, unit_ids, available_academies
+    //   - available_academies: list of { academy_id, role, permissions }
+    //
+    // Collection: academies
+    // Fields: name, owner_uid, created_at
+    //
+    // Collection: athletes
+    // Fields: academy_id, unit_id, name, email, pac_score, etc.
+    //
+    // Collection: checkins
+    // Fields: academy_id, athlete_id, schedule_id, date, status
+    //
+    // Collection: posts
+    // Fields: academy_id, athlete_id, content, created_at
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDeveloper() {
+      return isAuthenticated() && 
+        request.auth.token.email == "alphatech.fabio@gmail.com" && 
+        request.auth.token.email_verified == true;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAcademy() {
+      return isAuthenticated() && getUserData().role == 'academy';
+    }
+
+    function isProfessor() {
+      return isAuthenticated() && getUserData().role == 'professor';
+    }
+
+    function isAthlete() {
+      return isAuthenticated() && getUserData().role == 'athlete';
+    }
+
+    function belongsToAcademy(academyId) {
+      return isAuthenticated() && academyId != null && getUserData().academy_id == academyId;
+    }
+
+    function isSameAcademy(data) {
+      return isAuthenticated() && data.academy_id != null && getUserData().academy_id == data.academy_id;
+    }
+
+    function isOwner(data) {
+      return isAuthenticated() && data.owner_id == request.auth.uid;
+    }
+
+    // Validation Helpers
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidString(field, min, max) {
+      return request.resource.data[field] is string && 
+             request.resource.data[field].size() >= min && 
+             request.resource.data[field].size() <= max;
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['athlete', 'professor', 'academy', 'developer'] &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
+             (!('academy_id' in data) || data.academy_id is string) &&
+             (!('available_academies' in data) || data.available_academies is list);
+    }
+
+    function isValidAcademy(data) {
+      return hasRequiredFields(['name', 'owner_id']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.owner_id is string &&
+             (!('telegram_bot_token' in data) || data.telegram_bot_token is string) &&
+             (!('telegram_chat_id' in data) || data.telegram_chat_id is string);
+    }
+
+    function isValidPost(data) {
+      return hasRequiredFields(['academy_id', 'athlete_id', 'content', 'created_at']) &&
+             data.academy_id is string &&
+             data.athlete_id is string &&
+             data.content is string && data.content.size() <= 2000;
+    }
+
+    function isValidStory(data) {
+      return hasRequiredFields(['academy_id', 'athlete_id', 'created_at', 'expires_at']) &&
+             data.academy_id is string &&
+             data.athlete_id is string &&
+             data.created_at is string &&
+             data.expires_at is string &&
+             (!('media_type' in data) || data.media_type in ['image', 'video']) &&
+             (!('filter' in data) || data.filter is string) &&
+             (!('object_fit' in data) || data.object_fit in ['cover', 'contain']);
+    }
+
+    function isValidCheckIn(data) {
+      return hasRequiredFields(['academy_id', 'athlete_id', 'schedule_id', 'date', 'status']) &&
+             data.academy_id is string &&
+             data.athlete_id is string &&
+             data.status in ['pending', 'confirmed', 'cancelled'];
+    }
+
+    function isValidAthlete(data) {
+      return hasRequiredFields(['academy_id', 'name']) &&
+             data.academy_id is string &&
+             data.name is string && data.name.size() <= 100;
+    }
+
+    function isValidPlan(data) {
+      return hasRequiredFields(['academy_id', 'name', 'type', 'frequency', 'basePrice']) &&
+             data.academy_id is string &&
+             data.name is string && data.name.size() <= 100 &&
+             data.basePrice is number && data.basePrice >= 0;
+    }
+
+    function isValidMedia(data) {
+      return hasRequiredFields(['academy_id', 'title', 'url', 'type']) &&
+             data.academy_id is string &&
+             data.title is string && data.title.size() <= 200 &&
+             isValidUrl(data.url);
+    }
+
+    function isValidTechnique(data) {
+      return hasRequiredFields(['name', 'position', 'category', 'belt']) &&
+             data.name is string && data.position is string && data.category is string &&
+             data.belt in ['Branca', 'Azul', 'Roxa', 'Marrom', 'Preta'];
+    }
+
+    function isValidTechniqueSubmission(data) {
+      return hasRequiredFields(['technique_id', 'athlete_id', 'video_url', 'status']) &&
+             data.technique_id is string && data.athlete_id is string &&
+             isValidUrl(data.video_url) &&
+             data.status in ['pending', 'validated', 'rejected'];
+    }
+
+    function isValidProgress(data) {
+      return hasRequiredFields(['athlete_id', 'technique_id', 'status']) &&
+             data.athlete_id is string && data.technique_id is string &&
+             data.status in ['not_started', 'studying', 'submitted', 'validated'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isDeveloper());
+      allow create: if isAuthenticated() && 
+                    isValidUser(request.resource.data) && (
+        isDeveloper() || 
+        (request.auth.uid == userId && 
+         request.resource.data.role == 'athlete' && // Default role for self-signup
+         exists(/databases/$(database)/documents/whitelist/$(request.auth.token.email.lower())))
+      );
+      allow update: if isAuthenticated() && (
+        isDeveloper() || 
+        (request.auth.uid == userId && 
+         isValidUser(request.resource.data) &&
+         request.resource.data.role == resource.data.role && // Cannot change own role
+         request.resource.data.academy_id == resource.data.academy_id // Cannot change own academy
+        )
+      );
+      allow delete: if isDeveloper();
+    }
+
+    match /whitelist/{email} {
+      allow read, write: if isDeveloper();
+    }
+
+    match /academies/{academyId} {
+      allow read: if isAuthenticated() && (belongsToAcademy(academyId) || isDeveloper());
+      allow create: if isDeveloper();
+      allow update: if isDeveloper() || (isAuthenticated() && isAcademy() && belongsToAcademy(academyId) && isValidAcademy(request.resource.data));
+      allow delete: if isDeveloper();
+      
+      match /units/{unitId} {
+        allow read: if isDeveloper() || belongsToAcademy(academyId);
+        allow write: if isDeveloper() || (isAcademy() && belongsToAcademy(academyId));
+      }
+
+      match /schedules/{scheduleId} {
+        allow read: if isAuthenticated() && (belongsToAcademy(academyId) || isDeveloper());
+        allow write: if isDeveloper() || (isAcademy() && belongsToAcademy(academyId)) || (isProfessor() && belongsToAcademy(academyId));
+      }
+    }
+
+    match /checkins/{checkinId} {
+      allow read: if isAuthenticated() && (isSameAcademy(resource.data) || isDeveloper());
+      allow create: if isAuthenticated() && 
+                    isValidCheckIn(request.resource.data) &&
+                    isSameAcademy(request.resource.data) &&
+                    (request.resource.data.athlete_id == request.auth.uid || isAcademy() || isProfessor());
+      allow update: if isAuthenticated() && 
+                    isValidCheckIn(request.resource.data) &&
+                    isSameAcademy(resource.data) &&
+                    (resource.data.athlete_id == request.auth.uid || isAcademy() || isProfessor() || isDeveloper());
+      allow delete: if isDeveloper() || (isAuthenticated() && isSameAcademy(resource.data) && isAcademy());
+    }
+
+    match /athletes/{athleteId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == athleteId || 
+        isDeveloper() || 
+        (isSameAcademy(resource.data))
+      );
+      allow create: if isDeveloper() || 
+                     (isAcademy() && isSameAcademy(request.resource.data)) ||
+                     (isProfessor() && isSameAcademy(request.resource.data));
+      allow update: if isDeveloper() || 
+                             (isAcademy() && isSameAcademy(resource.data)) ||
+                             (isProfessor() && isSameAcademy(resource.data)) ||
+                             request.auth.uid == athleteId;
+      allow delete: if isDeveloper();
+
+      // Sub-collections inherit the same isolation
+      match /{allSubcollections=**} {
+        allow read, write: if isAuthenticated() && (
+          request.auth.uid == athleteId || 
+          isDeveloper() || 
+          isProfessor() ||
+          isAcademy() ||
+          (belongsToAcademy(get(/databases/$(database)/documents/athletes/$(athleteId)).data.academy_id))
+        );
+      }
+    }
+
+    match /posts/{postId} {
+      allow read: if isAuthenticated() && (isSameAcademy(resource.data) || isDeveloper());
+      allow create: if isAuthenticated() && 
+                    isValidPost(request.resource.data) && 
+                    isSameAcademy(request.resource.data);
+      allow update, delete: if isAuthenticated() && 
+                            isSameAcademy(resource.data) &&
+                            (resource.data.athlete_id == request.auth.uid || isAcademy() || isDeveloper());
+    }
+
+    match /stories/{storyId} {
+      allow read: if isAuthenticated() && (isSameAcademy(resource.data) || isDeveloper());
+      allow create: if isAuthenticated() && 
+                    isValidStory(request.resource.data) && 
+                    isSameAcademy(request.resource.data);
+      allow update, delete: if isAuthenticated() && 
+                            isSameAcademy(resource.data) &&
+                            (resource.data.athlete_id == request.auth.uid || isAcademy() || isDeveloper());
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isDeveloper() || (isAcademy() && isSameAcademy(resource.data)));
+      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isDeveloper() || isAcademy() || isProfessor();
+      allow delete: if isDeveloper();
+    }
+
+    match /plans/{planId} {
+      allow read: if isAuthenticated() && (isSameAcademy(resource.data) || isDeveloper());
+      allow create: if (isDeveloper() || (isAcademy() && isSameAcademy(request.resource.data))) && isValidPlan(request.resource.data);
+      allow update: if (isDeveloper() || (isAcademy() && isSameAcademy(request.resource.data))) && isValidPlan(request.resource.data);
+      allow delete: if isDeveloper();
+    }
+
+    match /media/{mediaId} {
+      allow read: if isAuthenticated() && (isSameAcademy(resource.data) || isDeveloper());
+      allow create: if (isDeveloper() || ((isAcademy() || isProfessor()) && isSameAcademy(request.resource.data))) && isValidMedia(request.resource.data);
+      allow update: if (isDeveloper() || ((isAcademy() || isProfessor()) && isSameAcademy(resource.data))) && isValidMedia(request.resource.data);
+      allow delete: if isDeveloper() || (isAuthenticated() && (isAcademy() || isProfessor()) && isSameAcademy(resource.data));
+    }
+    
+    match /techniques/{techniqueId} {
+      allow read: if isAuthenticated();
+      allow write: if isDeveloper();
+    }
+
+    match /technique_submissions/{submissionId} {
+      allow read: if isAuthenticated() && (
+        resource.data.athlete_id == request.auth.uid || 
+        isDeveloper() || 
+        (isAcademy() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(resource.data.athlete_id)).data.academy_id)) ||
+        (isProfessor() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(resource.data.athlete_id)).data.academy_id))
+      );
+      allow create: if isAuthenticated() && 
+                    isValidTechniqueSubmission(request.resource.data) &&
+                    request.resource.data.athlete_id == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        isDeveloper() ||
+        (isProfessor() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(resource.data.athlete_id)).data.academy_id)) ||
+        (isAcademy() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(resource.data.athlete_id)).data.academy_id))
+      );
+    }
+
+    match /student_technique_progress/{progressId} {
+      allow read: if isAuthenticated() && (
+        resource.data.athlete_id == request.auth.uid || 
+        isDeveloper() || 
+        (isAcademy() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(resource.data.athlete_id)).data.academy_id)) ||
+        (isProfessor() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(resource.data.athlete_id)).data.academy_id))
+      );
+      allow write: if isAuthenticated() && (
+        request.resource.data.athlete_id == request.auth.uid ||
+        isDeveloper() ||
+        (isProfessor() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(request.resource.data.athlete_id)).data.academy_id)) ||
+        (isAcademy() && belongsToAcademy(get(/databases/$(database)/documents/athletes/$(request.resource.data.athlete_id)).data.academy_id))
+      );
+    }
+
+    match /graduation_config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isDeveloper();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /documents/{documentId} {
+      allow read: if isAuthenticated();
+      allow write: if isDeveloper();
+    }
+
+    // Default deny for anything else
+    match /{document=**} {
+      allow read, write: if isDeveloper();
+    }
+  }
+}

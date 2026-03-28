@@ -1,0 +1,5 @@
+{
+  "name": "PAC - Atleta Campeão",
+  "description": "Plataforma de gestão de alto rendimento para atletas de Jiu-Jitsu e esportes de combate.",
+  "requestFramePermissions": ["camera"]
+}

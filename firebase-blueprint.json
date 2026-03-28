@@ -1,0 +1,254 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with role-based access",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["athlete", "professor", "academy", "developer"] },
+        "name": { "type": "string" },
+        "academy_id": { "type": "string", "description": "Linked academy for professors and athletes" },
+        "unit_ids": { "type": "array", "items": { "type": "string" }, "description": "Units where the professor can teach" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Academy": {
+      "title": "Academy",
+      "description": "Top-level management entity",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "owner_id": { "type": "string" },
+        "head_coach": { "type": "string" },
+        "location": { "type": "string" },
+        "contact": { "type": "string" },
+        "telegram_bot_token": { "type": "string" },
+        "telegram_chat_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "owner_id"]
+    },
+    "ClassSchedule": {
+      "title": "Class Schedule",
+      "description": "Recurring class configuration",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "unit_id": { "type": "string" },
+        "day_of_week": { "type": "integer", "minimum": 0, "maximum": 6 },
+        "start_time": { "type": "string", "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$" },
+        "end_time": { "type": "string", "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$" },
+        "activity": { "type": "string" },
+        "instructor_id": { "type": "string" },
+        "instructor_name": { "type": "string" },
+        "max_capacity": { "type": "integer" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["academy_id", "day_of_week", "start_time", "end_time", "activity"]
+    },
+    "CheckIn": {
+      "title": "Check-In",
+      "description": "Student attendance record",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "athlete_id": { "type": "string" },
+        "athlete_name": { "type": "string" },
+        "schedule_id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "checkin_time": { "type": "string", "format": "date-time" },
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "confirmed_by": { "type": "string" }
+      },
+      "required": ["academy_id", "athlete_id", "schedule_id", "date", "status"]
+    },
+    "Unit": {
+      "title": "Unit",
+      "description": "Specific location or branch of an academy",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["academy_id", "name"]
+    },
+    "Athlete": {
+      "title": "Athlete",
+      "description": "Athlete profile with PAC metrics",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "unit_id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "pac_score": { "type": "number" },
+        "merit_points": { "type": "number" },
+        "latest_discipline_score": { "type": "number" },
+        "latest_taf_score": { "type": "number" },
+        "latest_technical_score": { "type": "number" },
+        "latest_psychology_score": { "type": "number" },
+        "latest_health_score": { "type": "number" },
+        "latest_training_score": { "type": "number" }
+      },
+      "required": ["academy_id", "name"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Social feed post",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "athlete_id": { "type": "string" },
+        "athlete_name": { "type": "string" },
+        "content": { "type": "string" },
+        "image_url": { "type": "string" },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["academy_id", "athlete_id", "content", "created_at"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Temporary social story (24h)",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "athlete_id": { "type": "string" },
+        "athlete_name": { "type": "string" },
+        "content": { "type": "string" },
+        "image_url": { "type": "string" },
+        "media_type": { "type": "string", "enum": ["image", "video"] },
+        "filter": { "type": "string" },
+        "object_fit": { "type": "string", "enum": ["cover", "contain"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["academy_id", "athlete_id", "created_at", "expires_at"]
+    },
+    "Plan": {
+      "title": "Plan",
+      "description": "Financial plan for athletes",
+      "type": "object",
+      "properties": {
+        "academy_id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" }
+      },
+      "required": ["academy_id", "name", "price"]
+    },
+    "Technique": {
+      "title": "Technique",
+      "description": "Jiu-Jitsu technique library entry",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "position": { "type": "string", "description": "e.g., EM PÉ, GUARDA, CONTROLE SUPERIOR" },
+        "category": { "type": "string", "description": "e.g., quedas, guarda fechada, passagem de guarda" },
+        "belt": { "type": "string", "enum": ["Branca", "Azul", "Roxa", "Marrom", "Preta"] },
+        "initial_position": { "type": "string" },
+        "objective": { "type": "string" },
+        "steps": { "type": "array", "items": { "type": "string" } },
+        "common_errors": { "type": "array", "items": { "type": "string" } },
+        "technical_adjustments": { "type": "string" },
+        "defenses": { "type": "array", "items": { "type": "string" } },
+        "continuações": { "type": "array", "items": { "type": "string" } },
+        "variations": { "type": "array", "items": { "type": "string" } },
+        "visuals": {
+          "type": "object",
+          "properties": {
+            "image_url": { "type": "string" },
+            "gif_url": { "type": "string" },
+            "video_url": { "type": "string" }
+          }
+        },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "position", "category", "belt"]
+    },
+    "TechniqueSubmission": {
+      "title": "Technique Submission",
+      "description": "Student video submission for technique evaluation",
+      "type": "object",
+      "properties": {
+        "technique_id": { "type": "string" },
+        "athlete_id": { "type": "string" },
+        "athlete_name": { "type": "string" },
+        "video_url": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "validated", "rejected"] },
+        "professor_feedback": { "type": "string" },
+        "evaluated_by": { "type": "string" },
+        "evaluated_at": { "type": "string", "format": "date-time" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["technique_id", "athlete_id", "video_url", "status"]
+    },
+    "StudentTechniqueProgress": {
+      "title": "Student Technique Progress",
+      "description": "Tracking student progress on a specific technique",
+      "type": "object",
+      "properties": {
+        "athlete_id": { "type": "string" },
+        "technique_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["not_started", "studying", "submitted", "validated"] },
+        "last_updated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["athlete_id", "technique_id", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    },
+    "/academies/{academyId}": {
+      "schema": "Academy",
+      "description": "Academy data"
+    },
+    "/academies/{academyId}/units/{unitId}": {
+      "schema": "Unit",
+      "description": "Academy units"
+    },
+    "/academies/{academyId}/schedules/{scheduleId}": {
+      "schema": "ClassSchedule",
+      "description": "Class schedules for the academy"
+    },
+    "/checkins/{checkinId}": {
+      "schema": "CheckIn",
+      "description": "Attendance records"
+    },
+    "/athletes/{athleteId}": {
+      "schema": "Athlete",
+      "description": "Athlete specific data"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Academy-specific social posts"
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Academy-specific temporary stories"
+    },
+    "/plans/{planId}": {
+      "schema": "Plan",
+      "description": "Academy-specific financial plans"
+    },
+    "/techniques/{techniqueId}": {
+      "schema": "Technique",
+      "description": "Global technique library"
+    },
+    "/technique_submissions/{submissionId}": {
+      "schema": "TechniqueSubmission",
+      "description": "Video submissions for evaluation"
+    },
+    "/student_technique_progress/{progressId}": {
+      "schema": "StudentTechniqueProgress",
+      "description": "Student-specific technique progress"
+    }
+  }
+}

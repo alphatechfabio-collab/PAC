@@ -1,0 +1,93 @@
+30:  Watch, AlarmClock, History, Undo, Redo, RotateCcw, RotateCcw as RotateCw, ZoomIn, ZoomOut, Move, 
+270:  const [storyUploadProgress, setStoryUploadProgress] = useState(0);
+271:  const [storyFilter, setStoryFilter] = useState('none');
+272:  const [storyObjectFit, setStoryObjectFit] = useState<'cover' | 'contain'>('cover');
+302:        .filter(story => story.expires_at > now);
+394:        filter: storyFilter,
+395:        object_fit: storyObjectFit,
+424:  const groupedStories = stories.reduce((acc, story) => {
+425:    if (!acc[story.athlete_id]) {
+426:      acc[story.athlete_id] = {
+427:        athlete_id: story.athlete_id,
+428:        athlete_name: story.athlete_name,
+432:    acc[story.athlete_id].stories.push(story);
+436:  const storyGroups = Object.values(groupedStories) as { athlete_id: string, athlete_name: string, stories: Story[] }[];
+452:          {storyGroups.map((group) => (
+550:                  {storyObjectFit === 'cover' ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+551:                  {storyObjectFit === 'cover' ? 'Ajustar' : 'Preencher'}
+558:                  <video src={URL.createObjectURL(newStoryImage)} className={`w-full h-full ${storyObjectFit === 'contain' ? 'object-contain' : 'object-cover'}`} controls style={{ filter: storyFilter }} />
+560:                  <img src={URL.createObjectURL(newStoryImage)} alt="Preview" className={`w-full h-full ${storyObjectFit === 'contain' ? 'object-contain' : 'object-cover'}`} style={{ filter: storyFilter }} />
+598:                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${storyFilter === f.value ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+621:                <span>{Math.round(storyUploadProgress)}%</span>
+626:                  style={{ width: `${storyUploadProgress}%` }}
+662:                    // Find next story or close
+663:                    const currentGroupIndex = storyGroups.findIndex(g => g.athlete_id === viewingStory.athlete_id);
+665:                      const currentGroup = storyGroups[currentGroupIndex];
+669:                      } else if (currentGroupIndex < storyGroups.length - 1) {
+670:                        setViewingStory(storyGroups[currentGroupIndex + 1].stories[0]);
+849:  const tech = athlete.technical_history || {};
+905:    (athlete.technical_history?.raspagens_efficiency || 0) +
+906:    (athlete.technical_history?.passagens_efficiency || 0) +
+907:    (athlete.technical_history?.finalizacoes_efficiency || 0) +
+908:    (athlete.technical_history?.quedas_efficiency || 0) +
+909:    (athlete.technical_history?.defesa_efficiency || 0)
+4861:                        {/* Submission History */}
+7324:                    { label: 'Raspagens', value: athlete.technical_competencies?.raspagens || athlete.technical_history?.raspagens_efficiency || 0 },
+7325:                    { label: 'Passagens', value: athlete.technical_competencies?.passagens || athlete.technical_history?.passagens_efficiency || 0 },
+7326:                    { label: 'Finalizações', value: athlete.technical_competencies?.finalizacoes || athlete.technical_history?.finalizacoes_efficiency || 0 },
+7327:                    { label: 'Quedas', value: athlete.technical_competencies?.quedas || athlete.technical_history?.quedas_efficiency || 0 },
+7328:                    { label: 'Defesa', value: athlete.technical_competencies?.defesa || athlete.technical_history?.defesa_efficiency || 0 },
+7968:        - TDEE (Calorimetria): ${athlete.calorimetry_history?.[athlete.calorimetry_history.length - 1]?.tdee_estimated || 'N/A'}
+8822:                    {athlete.calorimetry_history && athlete.calorimetry_history.length > 0 ? (
+8826:                          <div className="text-2xl font-black text-amber-500">{athlete.calorimetry_history[athlete.calorimetry_history.length - 1].tdee_estimated || '--'}</div>
+8831:                          <div className="text-2xl font-black text-white">{athlete.calorimetry_history[athlete.calorimetry_history.length - 1].resting_metabolic_rate || '--'}</div>
+8844:              {/* Technical Efficiency History */}
+8855:                      { label: 'Raspagens', value: athlete.technical_history?.raspagens_efficiency || 0, color: 'bg-emerald-500' },
+8856:                      { label: 'Passagens', value: athlete.technical_history?.passagens_efficiency || 0, color: 'bg-blue-500' },
+8857:                      { label: 'Finalizações', value: athlete.technical_history?.finalizacoes_efficiency || 0, color: 'bg-amber-500' },
+8858:                      { label: 'Quedas', value: athlete.technical_history?.quedas_efficiency || 0, color: 'bg-rose-500' },
+8859:                      { label: 'Defesa', value: athlete.technical_history?.defesa_efficiency || 0, color: 'bg-indigo-500' },
+9613:                    <History size={24} className="text-zinc-600" />
+11977:        technical_history: {
+11978:          ...athlete.technical_history,
+12004:        'technical_history.raspagens_efficiency': formData.raspagens_efficiency,
+12005:        'technical_history.passagens_efficiency': formData.passagens_efficiency,
+12006:        'technical_history.finalizacoes_efficiency': formData.finalizacoes_efficiency,
+12007:        'technical_history.quedas_efficiency': formData.quedas_efficiency,
+12008:        'technical_history.defesa_efficiency': formData.defesa_efficiency,
+12126:      calorimetry_history: [] as any[]
+12215:        const cals = [...formData.calorimetry_history];
+12219:        setFormData({...formData, calorimetry_history: cals});
+12235:          calorimetry_history: athlete.calorimetry_history || []
+12258:        'calorimetry_history': formData.calorimetry_history
+12261:      // Log history entry
+12449:            {formData.calorimetry_history?.map((cal: any, index: number) => (
+12466:                      const cals = [...formData.calorimetry_history];
+12468:                      setFormData({...formData, calorimetry_history: cals});
+12475:                      const cals = [...formData.calorimetry_history];
+12477:                      setFormData({...formData, calorimetry_history: cals});
+12484:                      const cals = [...formData.calorimetry_history];
+12486:                      setFormData({...formData, calorimetry_history: cals});
+12493:                      const cals = [...formData.calorimetry_history];
+12495:                      setFormData({...formData, calorimetry_history: cals});
+12504:              setFormData({ ...formData, calorimetry_history: [...(formData.calorimetry_history || []), newCal] });
+13541:    (athlete.technical_history?.raspagens_efficiency || 0) +
+13542:    (athlete.technical_history?.passagens_efficiency || 0) +
+13543:    (athlete.technical_history?.finalizacoes_efficiency || 0) +
+13544:    (athlete.technical_history?.quedas_efficiency || 0) +
+13545:    (athlete.technical_history?.defesa_efficiency || 0)
+16296:const MetricHistory = ({ type, athletes, onEdit }: { type: string, athletes: any[], onEdit?: (item: any) => void }) => {
+16297:  const [history, setHistory] = useState<any[]>([]);
+16350:        setHistory(data);
+16353:        console.error(`History fetch error for ${type}:`, error);
+16359:      console.error("Error setting up history listener:", err);
+16533:  if (history.length === 0) return (
+16542:        <History size={14} className="text-zinc-500" />
+16546:        {history.map((item) => (
+17501:                      <MetricHistory 
+17519:                      <MetricHistory 
+17537:                      <MetricHistory 
+17555:                      <MetricHistory 
+17573:                      <MetricHistory 
+17591:                      <MetricHistory 
+17646:                        <MetricHistory 
